@@ -1,97 +1,136 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>会务排座系统（蓝白主题）</title>
+  <meta charset="UTF-8">
+  <title>排座系统 Pro（蓝白主题）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
-    body {
-      font-family: "Microsoft YaHei", sans-serif;
-      margin: 0;
-      padding: 1rem;
-      background: #f0f6fc;
-    }
-    h1 {
-      color: #1565c0;
-      font-size: 20px;
-      margin-bottom: 1rem;
-    }
+    body { font-family: "Microsoft YaHei", sans-serif; background: #f0f6fc; margin: 0; padding: 20px; }
+    h1 { text-align: center; color: #1565c0; }
+    #controls, #guestList { text-align: center; margin-bottom: 10px; }
     button {
-      background-color: #1565c0;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      margin: 4px;
-      border-radius: 4px;
-      font-size: 14px;
+      background: #1565c0; color: white; border: none; border-radius: 4px;
+      padding: 6px 12px; margin: 5px; cursor: pointer;
     }
+    input[type="file"] { margin: 5px; }
     #workspace {
-      margin-top: 1rem;
-      border: 1px solid #ccc;
-      height: 500px;
-      background: #ffffff;
-      position: relative;
-      overflow: auto;
+      width: 100%; height: 600px; border: 1px solid #ccc; background: white;
+      position: relative; overflow: auto; border-radius: 8px;
     }
     .table {
-      position: absolute;
-      background: #e3f2fd;
-      border: 2px solid #1565c0;
-      border-radius: 8px;
-      padding: 8px;
-      display: flex;
-      flex-wrap: wrap;
-      width: 200px;
+      position: absolute; background: #e3f2fd; border: 2px solid #90caf9;
+      padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       touch-action: none;
     }
     .seat {
-      width: 60px;
-      height: 30px;
-      background: white;
-      border: 1px dashed #1565c0;
-      margin: 4px;
-      text-align: center;
-      line-height: 30px;
-      border-radius: 4px;
-      font-size: 13px;
+      width: 70px; height: 30px; border: 1px dashed #999; margin: 4px auto;
+      background: #f0f0f0; text-align: center; line-height: 30px; border-radius: 4px;
+    }
+    .seat.occupied {
+      background: #bbdefb; border: 1px solid #2196f3; font-weight: bold;
+    }
+    .guest {
+      display: inline-block; background: #bbdefb; padding: 6px 12px; border-radius: 16px;
+      margin: 4px; cursor: grab;
     }
   </style>
 </head>
 <body>
-  <h1>会务排座系统（蓝白主题，支持手机拖动）</h1>
-  <button onclick="addTable()">添加桌子</button>
+  <h1>排座系统 Pro（蓝白主题，支持手机拖动）</h1>
+
+  <div id="controls">
+    <input type="file" id="excelInput" accept=".xlsx" />
+    <input type="file" id="logoInput" accept="image/*" />
+    <button onclick="addTable()">添加桌子</button>
+    <button onclick="autoArrange()">自动排座</button>
+    <button onclick="exportCards()">导出桌卡 PDF</button>
+    <button onclick="exportImage()">导出排座图</button>
+  </div>
+
   <div id="workspace"></div>
 
+  <div id="guestList">
+    <h3>嘉宾列表</h3>
+    <div id="guests"></div>
+  </div>
+
   <script>
-    let currentId = 0;
+    let logoDataUrl = '';
+    let tableId = 0;
+
+    document.getElementById('logoInput').addEventListener('change', e => {
+      const reader = new FileReader();
+      reader.onload = () => logoDataUrl = reader.result;
+      reader.readAsDataURL(e.target.files[0]);
+    });
+
+    document.getElementById('excelInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const guests = XLSX.utils.sheet_to_json(sheet);
+        const guestDiv = document.getElementById('guests');
+        guestDiv.innerHTML = '';
+        guests.forEach(g => {
+          const div = document.createElement('div');
+          div.className = 'guest';
+          div.textContent = g.姓名;
+          div.dataset.name = g.姓名;
+          div.dataset.unit = g.单位 || '';
+          div.dataset.title = g.职务 || '';
+          div.draggable = true;
+          div.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('text/plain', JSON.stringify(div.dataset));
+          });
+          guestDiv.appendChild(div);
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
     function addTable() {
-      const table = document.createElement("div");
-      table.className = "table";
-      table.style.top = Math.random() * 300 + "px";
-      table.style.left = Math.random() * 200 + "px";
-      table.setAttribute("id", "table" + (++currentId));
+      const table = document.createElement('div');
+      table.className = 'table';
+      table.style.left = '50px';
+      table.style.top = '50px';
+      table.dataset.id = tableId++;
 
       for (let i = 0; i < 6; i++) {
-        const seat = document.createElement("div");
-        seat.className = "seat";
-        seat.textContent = "";
+        const seat = document.createElement('div');
+        seat.className = 'seat';
+        seat.addEventListener('dragover', e => e.preventDefault());
+        seat.addEventListener('drop', e => {
+          const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+          seat.textContent = data.name;
+          seat.classList.add('occupied');
+          seat.dataset.name = data.name;
+          seat.dataset.unit = data.unit;
+          seat.dataset.title = data.title;
+        });
         table.appendChild(seat);
       }
 
       makeDraggable(table);
-      document.getElementById("workspace").appendChild(table);
+      document.getElementById('workspace').appendChild(table);
     }
 
     function makeDraggable(el) {
       let offsetX = 0, offsetY = 0, dragging = false;
 
-      el.addEventListener("touchstart", function(e) {
+      el.addEventListener('touchstart', function(e) {
         dragging = true;
-        offsetX = e.touches[0].clientX - el.getBoundingClientRect().left;
-        offsetY = e.touches[0].clientY - el.getBoundingClientRect().top;
+        const rect = el.getBoundingClientRect();
+        offsetX = e.touches[0].clientX - rect.left;
+        offsetY = e.touches[0].clientY - rect.top;
       });
 
-      el.addEventListener("touchmove", function(e) {
+      el.addEventListener('touchmove', function(e) {
         if (!dragging) return;
         e.preventDefault();
         const x = e.touches[0].clientX - offsetX;
@@ -100,8 +139,46 @@
         el.style.top = y + "px";
       });
 
-      el.addEventListener("touchend", function() {
+      el.addEventListener('touchend', function() {
         dragging = false;
+      });
+    }
+
+    function autoArrange() {
+      const guests = document.querySelectorAll('.guest');
+      const seats = document.querySelectorAll('.seat:not(.occupied)');
+      guests.forEach((g, i) => {
+        if (seats[i]) {
+          seats[i].textContent = g.dataset.name;
+          seats[i].classList.add('occupied');
+          seats[i].dataset.name = g.dataset.name;
+          seats[i].dataset.unit = g.dataset.unit;
+          seats[i].dataset.title = g.dataset.title;
+        }
+      });
+    }
+
+    async function exportCards() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const seats = document.querySelectorAll('.seat.occupied');
+      seats.forEach((seat, i) => {
+        if (i > 0) doc.addPage();
+        if (logoDataUrl) doc.addImage(logoDataUrl, "PNG", 10, 10, 40, 20);
+        doc.setFontSize(18);
+        doc.text(`姓名：${seat.dataset.name || ''}`, 20, 50);
+        doc.text(`单位：${seat.dataset.unit || ''}`, 20, 65);
+        doc.text(`职务：${seat.dataset.title || ''}`, 20, 80);
+      });
+      doc.save("桌卡合集.pdf");
+    }
+
+    function exportImage() {
+      html2canvas(document.getElementById('workspace')).then(canvas => {
+        const link = document.createElement('a');
+        link.download = '排座图.png';
+        link.href = canvas.toDataURL();
+        link.click();
       });
     }
   </script>
