@@ -455,6 +455,10 @@
     </div>
 
     <script>
+        let draggedElement = null;
+let offsetX, offsetY;
+let currentZoom = 1;
+const canvas = document.getElementById('canvas');
         document.addEventListener('DOMContentLoaded', function() {
             // 示例参会人员数据
             const participants = [
