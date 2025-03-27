@@ -1,299 +1,805 @@
-
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>排座系统 Pro（完整版）</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-// ✅ 增加手机端拖动兼容
-function enableTouchDrag(table) {
-  let offsetX = 0, offsetY = 0, dragging = false;
-
-  table.addEventListener("touchstart", function(e) {
-    dragging = true;
-    const rect = table.getBoundingClientRect();
-    offsetX = e.touches[0].clientX - rect.left;
-    offsetY = e.touches[0].clientY - rect.top;
-  });
-
-  table.addEventListener("touchmove", function(e) {
-    if (!dragging) return;
-    e.preventDefault();
-    const x = e.touches[0].clientX - offsetX;
-    const y = e.touches[0].clientY - offsetY;
-    table.style.left = x + "px";
-    table.style.top = y + "px";
-  });
-
-  table.addEventListener("touchend", function() {
-    dragging = false;
-  });
-}
-
-</script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-// ✅ 增加手机端拖动兼容
-function enableTouchDrag(table) {
-  let offsetX = 0, offsetY = 0, dragging = false;
-
-  table.addEventListener("touchstart", function(e) {
-    dragging = true;
-    const rect = table.getBoundingClientRect();
-    offsetX = e.touches[0].clientX - rect.left;
-    offsetY = e.touches[0].clientY - rect.top;
-  });
-
-  table.addEventListener("touchmove", function(e) {
-    if (!dragging) return;
-    e.preventDefault();
-    const x = e.touches[0].clientX - offsetX;
-    const y = e.touches[0].clientY - offsetY;
-    table.style.left = x + "px";
-    table.style.top = y + "px";
-  });
-
-  table.addEventListener("touchend", function() {
-    dragging = false;
-  });
-}
-
-</script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js">
-// ✅ 增加手机端拖动兼容
-function enableTouchDrag(table) {
-  let offsetX = 0, offsetY = 0, dragging = false;
-
-  table.addEventListener("touchstart", function(e) {
-    dragging = true;
-    const rect = table.getBoundingClientRect();
-    offsetX = e.touches[0].clientX - rect.left;
-    offsetY = e.touches[0].clientY - rect.top;
-  });
-
-  table.addEventListener("touchmove", function(e) {
-    if (!dragging) return;
-    e.preventDefault();
-    const x = e.touches[0].clientX - offsetX;
-    const y = e.touches[0].clientY - offsetY;
-    table.style.left = x + "px";
-    table.style.top = y + "px";
-  });
-
-  table.addEventListener("touchend", function() {
-    dragging = false;
-  });
-}
-
-</script>
-  <style>
-    body { font-family: "Microsoft YaHei", sans-serif; background: #f0f6fc; margin: 0; padding: 20px; }
-    h1 { text-align: center; color: #1565c0; }
-    #controls, #guestList { text-align: center; margin-bottom: 10px; }
-    button {
-      background: #1565c0; color: white; border: none; border-radius: 4px;
-      padding: 6px 12px; margin: 5px; cursor: pointer;
-    }
-    input[type="file"] { margin: 5px; }
-    #workspace {
-      width: 100%; height: 600px; border: 1px solid #ccc; background: white;
-      position: relative; overflow: auto; border-radius: 8px;
-    }
-    .table {
-      position: absolute; background: #e3f2fd; border: 2px solid #90caf9;
-      padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .seat {
-      width: 70px; height: 30px; border: 1px dashed #999; margin: 4px auto;
-      background: #f0f0f0; text-align: center; line-height: 30px; border-radius: 4px;
-    }
-    .seat.occupied {
-      background: #bbdefb; border: 1px solid #2196f3; font-weight: bold;
-    }
-    .guest {
-      display: inline-block; background: #bbdefb; padding: 6px 12px; border-radius: 16px;
-      margin: 4px; cursor: grab;
-    }
-    .group-label {
-      padding: 2px 6px; border-radius: 4px; font-size: 12px; color: white;
-      display: inline-block; margin-bottom: 4px;
-    }
-    .主桌 { background: #d32f2f; }
-    .嘉宾桌 { background: #1976d2; }
-    .媒体桌 { background: #388e3c; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会务排座系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .header {
+            background-color: #3a5998;
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .toolbar {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        @media (min-width: 768px) {
+            .main-area {
+                flex-direction: row;
+            }
+        }
+        
+        .room-layout {
+            flex: 3;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            min-height: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+            background-color: #f9f9f9;
+            background-image: 
+                linear-gradient(rgba(200,200,200,0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(200,200,200,0.2) 1px, transparent 1px);
+            background-size: 20px 20px;
+            position: relative;
+        }
+        
+        .participants {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .participants h3 {
+            margin-bottom: 15px;
+            color: #3a5998;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        .participant-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .participant-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: grab;
+        }
+        
+        .participant-item:hover {
+            background-color: #f5f7fa;
+        }
+        
+        .participant-item.dragging {
+            opacity: 0.5;
+            background-color: #e0e7ff;
+        }
+        
+        .add-participant {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        button, .button {
+            padding: 8px 15px;
+            background-color: #3a5998;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover, .button:hover {
+            background-color: #4267b2;
+        }
+        
+        button.secondary {
+            background-color: #6c757d;
+        }
+        
+        button.secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            flex-grow: 1;
+        }
+        
+        .furniture-item {
+            position: absolute;
+            background-color: #4267b2;
+            color: white;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: move;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .table {
+            background-color: #3a5998;
+        }
+        
+        .chair {
+            background-color: #6c757d;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+        }
+        
+        .person-tag {
+            position: absolute;
+            background-color: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 30px;
+            font-size: 12px;
+            z-index: 5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .furniture-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            display: flex;
+            gap: 5px;
+            z-index: 10;
+        }
+        
+        .zoom-controls button {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border-radius: 50%;
+        }
+        
+        .save-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom-color: #3a5998;
+            color: #3a5998;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .furniture-controls {
+                justify-content: center;
+            }
+            
+            .main-area {
+                flex-direction: column;
+            }
+            
+            .room-layout, .participants {
+                width: 100%;
+            }
+            
+            .canvas-container {
+                min-height: 300px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>排座系统 Pro（支持导入导出、桌卡 PDF、截图）</h1>
+    <div class="header">
+        <h1>会务排座系统</h1>
+    </div>
+    
+    <div class="container">
+        <div class="toolbar">
+            <div class="furniture-controls">
+                <button id="add-table" class="table">添加桌子</button>
+                <button id="add-chair" class="secondary">添加椅子</button>
+                <button id="add-rectangle-table" class="table">长桌</button>
+                <button id="add-round-table" class="table">圆桌</button>
+            </div>
+            
+            <div class="action-controls">
+                <button id="clear-all" class="secondary">清空布局</button>
+                <button id="save-layout">保存布局</button>
+            </div>
+        </div>
+        
+        <div class="main-area">
+            <div class="room-layout">
+                <div class="canvas-container" id="canvas">
+                    <!-- 家具和参会人员将在这里动态生成 -->
+                </div>
+                <div class="zoom-controls">
+                    <button id="zoom-in">+</button>
+                    <button id="zoom-out">-</button>
+                </div>
+            </div>
+            
+            <div class="participants">
+                <div class="tabs">
+                    <div class="tab active" data-tab="people">参会人员</div>
+                    <div class="tab" data-tab="groups">分组管理</div>
+                </div>
+                
+                <div class="tab-content active" id="people-tab">
+                    <h3>参会人员列表</h3>
+                    <div class="participant-list" id="participant-list">
+                        <!-- 参会人员列表将在这里动态生成 -->
+                    </div>
+                    
+                    <div class="add-participant">
+                        <input type="text" id="new-participant" placeholder="输入参会人员姓名">
+                        <button id="add-participant">添加</button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="groups-tab">
+                    <h3>参会人员分组</h3>
+                    <div class="form-group">
+                        <label for="group-name">分组名称</label>
+                        <input type="text" id="group-name" placeholder="输入分组名称">
+                    </div>
+                    <button id="add-group">添加分组</button>
+                    
+                    <div id="group-list" class="participant-list">
+                        <!-- 分组列表将在这里动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="save-controls">
+            <button id="export-layout" class="secondary">导出为图片</button>
+            <button id="share-layout">分享布局</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="save-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>保存会议布局</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="layout-name">布局名称</label>
+                <input type="text" id="layout-name" placeholder="输入布局名称">
+            </div>
+            
+            <div class="form-group">
+                <label for="layout-desc">布局描述</label>
+                <textarea id="layout-desc" rows="3" placeholder="输入布局描述"></textarea>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="secondary close-modal-btn">取消</button>
+                <button id="confirm-save">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="share-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>分享会议布局</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="share-link">分享链接</label>
+                <input type="text" id="share-link" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label>分享方式</label>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button id="copy-link">复制链接</button>
+                    <button id="share-wechat" class="secondary">微信</button>
+                    <button id="share-email" class="secondary">邮件</button>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="close-modal-btn">关闭</button>
+            </div>
+        </div>
+    </div>
 
-  <div id="controls">
-    <input type="file" id="excelInput" accept=".xlsx" />
-    <input type="file" id="logoInput" accept="image/*" />
-    <button onclick="addTable()">添加桌子</button>
-    <select id="groupSelect">
-      <option value="嘉宾桌">嘉宾桌</option>
-      <option value="主桌">主桌</option>
-      <option value="媒体桌">媒体桌</option>
-    </select>
-    <button onclick="autoArrange()">自动排座</button>
-    <button onclick="exportCards()">导出桌卡 PDF</button>
-    <button onclick="exportImage()">导出排座图</button>
-  </div>
-
-  <div id="workspace"></div>
-
-  <div id="guestList">
-    <h3>嘉宾列表</h3>
-    <div id="guests"></div>
-  </div>
-
-  <canvas id="canvas" style="display:none;"></canvas>
-
-  <script>
-    let logoDataUrl = '';
-    let tableId = 0;
-    document.getElementById('logoInput').addEventListener('change', e => {
-      const reader = new FileReader();
-      reader.onload = () => logoDataUrl = reader.result;
-      reader.readAsDataURL(e.target.files[0]);
-    });
-
-    document.getElementById('excelInput').addEventListener('change', e => {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const guests = XLSX.utils.sheet_to_json(sheet);
-        const guestDiv = document.getElementById('guests');
-        guestDiv.innerHTML = '';
-        guests.forEach(g => {
-          const div = document.createElement('div');
-          div.className = 'guest';
-          div.textContent = g.姓名;
-          div.dataset.name = g.姓名;
-          div.dataset.unit = g.单位 || '';
-          div.dataset.title = g.职务 || '';
-          div.draggable = true;
-          div.addEventListener('dragstart', e => {
-            e.dataTransfer.setData('text/plain', JSON.stringify(div.dataset));
-          });
-          guestDiv.appendChild(div);
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 示例参会人员数据
+            const participants = [
+                { id: 1, name: '张总' },
+                { id: 2, name: '李经理' },
+                { id: 3, name: '王主管' },
+                { id: 4, name: '赵工程师' },
+                { id: 5, name: '刘设计师' },
+                { id: 6, name: '陈秘书' },
+                { id: 7, name: '吴助理' }
+            ];
+            
+            const canvas = document.getElementById('canvas');
+            const participantList = document.getElementById('participant-list');
+            let currentZoom = 1;
+            let draggedElement = null;
+            let offsetX, offsetY;
+            let nextId = 1;
+            
+            // 渲染参会人员列表
+            function renderParticipants() {
+                participantList.innerHTML = '';
+                participants.forEach(person => {
+                    const personEl = document.createElement('div');
+                    personEl.className = 'participant-item';
+                    personEl.setAttribute('draggable', true);
+                    personEl.setAttribute('data-id', person.id);
+                    personEl.innerHTML = `
+                        <span>${person.name}</span>
+                        <button class="remove-participant" data-id="${person.id}">×</button>
+                    `;
+                    participantList.appendChild(personEl);
+                    
+                    // 添加拖拽事件
+                    personEl.addEventListener('dragstart', function(e) {
+                        e.dataTransfer.setData('text/plain', person.id);
+                        this.classList.add('dragging');
+                    });
+                    
+                    personEl.addEventListener('dragend', function() {
+                        this.classList.remove('dragging');
+                    });
+                });
+                
+                // 添加删除参会人员的事件监听
+                document.querySelectorAll('.remove-participant').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = parseInt(this.getAttribute('data-id'));
+                        removeParticipant(id);
+                    });
+                });
+            }
+            
+            // 添加参会人员
+            function addParticipant(name) {
+                if (!name.trim()) return;
+                const newId = participants.length > 0 ? Math.max(...participants.map(p => p.id)) + 1 : 1;
+                participants.push({ id: newId, name: name.trim() });
+                renderParticipants();
+            }
+            
+            // 删除参会人员
+            function removeParticipant(id) {
+                const index = participants.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    participants.splice(index, 1);
+                    renderParticipants();
+                    
+                    // 移除画布上的该参会人员标签
+                    const personTags = document.querySelectorAll(`.person-tag[data-person-id="${id}"]`);
+                    personTags.forEach(tag => tag.remove());
+                }
+            }
+            
+            // 创建家具项
+            function createFurnitureItem(type, width = 100, height = 60, isRound = false) {
+                const item = document.createElement('div');
+                item.className = `furniture-item ${type}`;
+                item.style.width = `${width}px`;
+                item.style.height = `${height}px`;
+                
+                if (isRound) {
+                    item.style.borderRadius = '50%';
+                }
+                
+                item.setAttribute('data-type', type);
+                item.setAttribute('data-id', `furniture-${nextId++}`);
+                
+                if (type === 'table' || type === 'rectangle-table' || type === 'round-table') {
+                    item.innerHTML = type === 'round-table' ? '圆桌' : '桌子';
+                    item.style.zIndex = '1';
+                }
+                
+                // 使元素可拖动
+                item.addEventListener('mousedown', startDrag);
+                item.addEventListener('touchstart', startDrag, { passive: false });
+                
+                return item;
+            }
+            
+            // 开始拖动元素
+            function startDrag(e) {
+                e.preventDefault();
+                draggedElement = this;
+                
+                // 获取鼠标相对于元素的位置
+                if (e.type === 'mousedown') {
+                    offsetX = e.clientX - draggedElement.getBoundingClientRect().left;
+                    offsetY = e.clientY - draggedElement.getBoundingClientRect().top;
+                    
+                    document.addEventListener('mousemove', onDrag);
+                    document.addEventListener('mouseup', stopDrag);
+                } else if (e.type === 'touchstart') {
+                    const touch = e.touches[0];
+                    offsetX = touch.clientX - draggedElement.getBoundingClientRect().left;
+                    offsetY = touch.clientY - draggedElement.getBoundingClientRect().top;
+                    
+                    document.addEventListener('touchmove', onDrag, { passive: false });
+                    document.addEventListener('touchend', stopDrag);
+                }
+            }
+            
+            // 拖动中
+            function onDrag(e) {
+                if (!draggedElement) return;
+                e.preventDefault();
+                
+                let clientX, clientY;
+                if (e.type === 'mousemove') {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                } else if (e.type === 'touchmove') {
+                    const touch = e.touches[0];
+                    clientX = touch.clientX;
+                    clientY = touch.clientY;
+                }
+                
+                const canvasRect = canvas.getBoundingClientRect();
+                let left = (clientX - canvasRect.left - offsetX) / currentZoom;
+                let top = (clientY - canvasRect.top - offsetY) / currentZoom;
+                
+                // 限制在画布内
+                const width = parseInt(draggedElement.style.width);
+                const height = parseInt(draggedElement.style.height);
+                left = Math.max(0, Math.min(canvas.clientWidth / currentZoom - width, left));
+                top = Math.max(0, Math.min(canvas.clientHeight / currentZoom - height, top));
+                
+                draggedElement.style.left = `${left}px`;
+                draggedElement.style.top = `${top}px`;
+            }
+            
+            // 停止拖动
+            function stopDrag() {
+                draggedElement = null;
+                document.removeEventListener('mousemove', onDrag);
+                document.removeEventListener('mouseup', stopDrag);
+                document.removeEventListener('touchmove', onDrag);
+                document.removeEventListener('touchend', stopDrag);
+            }
+            
+            // 放置参会人员到座位
+            function dropPersonOnChair(personId, chairElement) {
+                const person = participants.find(p => p.id === parseInt(personId));
+                if (!person) return;
+                
+                // 检查是否已经有人坐在这个位置
+                const existingTag = chairElement.querySelector('.person-tag');
+                if (existingTag) {
+                    existingTag.remove();
+                }
+                
+                const personTag = document.createElement('div');
+                personTag.className = 'person-tag';
+                personTag.textContent = person.name;
+                personTag.setAttribute('data-person-id', person.id);
+                
+                // 将标签放在椅子上方
+                const chairRect = chairElement.getBoundingClientRect();
+                const canvasRect = canvas.getBoundingClientRect();
+                
+                const left = parseInt(chairElement.style.left) + (parseInt(chairElement.style.width) - 100) / 2;
+                const top = parseInt(chairElement.style.top) - 30;
+                
+                personTag.style.left = `${left}px`;
+                personTag.style.top = `${top}px`;
+                
+                // 添加双击删除功能
+                personTag.addEventListener('dblclick', function() {
+                    this.remove();
+                });
+                
+                canvas.appendChild(personTag);
+            }
+            
+            // 允许画布接收拖放的参会人员
+            canvas.addEventListener('dragover', function(e) {
+                e.preventDefault();
+            });
+            
+            canvas.addEventListener('drop', function(e) {
+                e.preventDefault();
+                const personId = e.dataTransfer.getData('text/plain');
+                
+                // 检查是否放在椅子上
+                const chairElements = document.querySelectorAll('.furniture-item.chair');
+                const canvasRect = canvas.getBoundingClientRect();
+                const dropX = e.clientX - canvasRect.left;
+                const dropY = e.clientY - canvasRect.top;
+                
+                let targetChair = null;
+                
+                chairElements.forEach(chair => {
+                    const chairRect = chair.getBoundingClientRect();
+                    if (
+                        dropX >= chairRect.left - canvasRect.left &&
+                        dropX <= chairRect.right - canvasRect.left &&
+                        dropY >= chairRect.top - canvasRect.top &&
+                        dropY <= chairRect.bottom - canvasRect.top
+                    ) {
+                        targetChair = chair;
+                    }
+                });
+                
+                if (targetChair) {
+                    dropPersonOnChair(personId, targetChair);
+                }
+            });
+            
+            // 添加各种家具的事件监听
+            document.getElementById('add-table').addEventListener('click', function() {
+                const table = createFurnitureItem('table');
+                table.style.left = '50px';
+                table.style.top = '50px';
+                canvas.appendChild(table);
+            });
+            
+            document.getElementById('add-chair').addEventListener('click', function() {
+                const chair = createFurnitureItem('chair', 40, 40);
+                chair.style.left = '50px';
+                chair.style.top = '150px';
+                canvas.appendChild(chair);
+            });
+            
+            document.getElementById('add-rectangle-table').addEventListener('click', function() {
+                const table = createFurnitureItem('rectangle-table', 200, 80);
+                table.style.left = '50px';
+                table.style.top = '50px';
+                canvas.appendChild(table);
+            });
+            
+            document.getElementById('add-round-table').addEventListener('click', function() {
+                const table = createFurnitureItem('round-table', 120, 120, true);
+                table.style.left = '50px';
+                table.style.top = '50px';
+                canvas.appendChild(table);
+            });
+            
+            // 添加参会人员
+            document.getElementById('add-participant').addEventListener('click', function() {
+                const input = document.getElementById('new-participant');
+                addParticipant(input.value);
+                input.value = '';
+            });
+            
+            document.getElementById('new-participant').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addParticipant(this.value);
+                    this.value = '';
+                }
+            });
+            
+            // 缩放控制
+            document.getElementById('zoom-in').addEventListener('click', function() {
+                if (currentZoom < 2) {
+                    currentZoom += 0.1;
+                    canvas.style.transform = `scale(${currentZoom})`;
+                    canvas.style.transformOrigin = 'top left';
+                }
+            });
+            
+            document.getElementById('zoom-out').addEventListener('click', function() {
+                if (currentZoom > 0.5) {
+                    currentZoom -= 0.1;
+                    canvas.style.transform = `scale(${currentZoom})`;
+                    canvas.style.transformOrigin = 'top left';
+                }
+            });
+            
+            // 清空布局
+            document.getElementById('clear-all').addEventListener('click', function() {
+                if (confirm('确定要清空当前布局吗？')) {
+                    const furnitureItems = document.querySelectorAll('.furniture-item, .person-tag');
+                    furnitureItems.forEach(item => item.remove());
+                }
+            });
+            
+            // 模态框控制
+            document.getElementById('save-layout').addEventListener('click', function() {
+                document.getElementById('save-modal').style.display = 'flex';
+            });
+            
+            document.getElementById('share-layout').addEventListener('click', function() {
+                // 生成一个假的分享链接
+                document.getElementById('share-link').value = `https://会务排座.com/share/${Date.now()}`;
+                document.getElementById('share-modal').style.display = 'flex';
+            });
+            
+            document.querySelectorAll('.close-modal, .close-modal-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        modal.style.display = 'none';
+                    });
+                });
+            });
+            
+            // 复制分享链接
+            document.getElementById('copy-link').addEventListener('click', function() {
+                const shareLink = document.getElementById('share-link');
+                shareLink.select();
+                document.execCommand('copy');
+                alert('链接已复制到剪贴板');
+            });
+            
+            // 标签页切换
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 移除所有标签页的活动状态
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    // 激活当前标签页
+                    this.classList.add('active');
+                    
+                    // 隐藏所有内容
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // 显示对应内容
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+            
+            // 初始渲染参会人员列表
+            renderParticipants();
         });
-      };
-      reader.readAsArrayBuffer(file);
-    });
-
-    function addTable() {
-      const group = document.getElementById('groupSelect').value;
-      const table = document.createElement('div');
-      table.className = 'table';
-      table.style.left = '50px';
-      table.style.top = '50px';
-      table.dataset.group = group;
-      table.dataset.id = tableId++;
-
-      const label = document.createElement('div');
-      label.className = 'group-label ' + group;
-      label.innerText = group;
-      table.appendChild(label);
-
-      for (let i = 0; i < 6; i++) {
-        const seat = document.createElement('div');
-        seat.className = 'seat';
-        seat.addEventListener('dragover', e => e.preventDefault());
-        seat.addEventListener('drop', e => {
-          const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-          seat.textContent = data.name;
-          seat.classList.add('occupied');
-          seat.dataset.name = data.name;
-          seat.dataset.unit = data.unit;
-          seat.dataset.title = data.title;
-        });
-        table.appendChild(seat);
-      }
-
-      table.draggable = true;
-      table.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('text/plain', '');
-        const rect = table.getBoundingClientRect();
-        table.dataset.offsetX = e.clientX - rect.left;
-        table.dataset.offsetY = e.clientY - rect.top;
-      });
-      table.addEventListener('dragend', e => {
-        table.style.left = (e.pageX - table.dataset.offsetX) + 'px';
-        table.style.top = (e.pageY - table.dataset.offsetY) + 'px';
-      });
-
-      enableTouchDrag(table);
-      document.getElementById('workspace').appendChild(table);
-    }
-
-    function autoArrange() {
-      const guests = document.querySelectorAll('.guest');
-      const seats = document.querySelectorAll('.seat:not(.occupied)');
-      guests.forEach((g, i) => {
-        if (seats[i]) {
-          seats[i].textContent = g.dataset.name;
-          seats[i].classList.add('occupied');
-          seats[i].dataset.name = g.dataset.name;
-          seats[i].dataset.unit = g.dataset.unit;
-          seats[i].dataset.title = g.dataset.title;
-        }
-      });
-    }
-
-    async function exportCards() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const seats = document.querySelectorAll('.seat.occupied');
-      seats.forEach((seat, i) => {
-        if (i > 0) doc.addPage();
-        if (logoDataUrl) doc.addImage(logoDataUrl, "PNG", 10, 10, 40, 20);
-        doc.setFontSize(18);
-        doc.text(`姓名：${seat.dataset.name || ''}`, 20, 50);
-        doc.text(`单位：${seat.dataset.unit || ''}`, 20, 65);
-        doc.text(`职务：${seat.dataset.title || ''}`, 20, 80);
-        doc.text(`桌号：${seat.closest('.table').dataset.group || ''}`, 20, 95);
-      });
-      doc.save("桌卡合集.pdf");
-    }
-
-    function exportImage() {
-      html2canvas(document.getElementById('workspace')).then(canvas => {
-        const link = document.createElement('a');
-        link.download = '排座图.png';
-        link.href = canvas.toDataURL();
-        link.click();
-      });
-    }
-  
-// ✅ 增加手机端拖动兼容
-function enableTouchDrag(table) {
-  let offsetX = 0, offsetY = 0, dragging = false;
-
-  table.addEventListener("touchstart", function(e) {
-    dragging = true;
-    const rect = table.getBoundingClientRect();
-    offsetX = e.touches[0].clientX - rect.left;
-    offsetY = e.touches[0].clientY - rect.top;
-  });
-
-  table.addEventListener("touchmove", function(e) {
-    if (!dragging) return;
-    e.preventDefault();
-    const x = e.touches[0].clientX - offsetX;
-    const y = e.touches[0].clientY - offsetY;
-    table.style.left = x + "px";
-    table.style.top = y + "px";
-  });
-
-  table.addEventListener("touchend", function() {
-    dragging = false;
-  });
-}
-
-</script>
+    </script>
 </body>
 </html>
