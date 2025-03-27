@@ -589,6 +589,7 @@ setTimeout(() => {
     const chairSpacing = width / 3;
     for (let i = 0; i < 2; i++) {
       const chair = createFurnitureItem('chair', 40, 40);
+      chair.setAttribute('data-parent-id', item.getAttribute('data-id'));
       chair.style.left = `${baseLeft + (i + 1) * chairSpacing - 20}px`;
       chair.style.top = `${baseTop + height + 10}px`;
       canvas.appendChild(chair);
@@ -617,63 +618,80 @@ setTimeout(() => {
             
             // 开始拖动元素
             function startDrag(e) {
-                e.preventDefault();
-                draggedElement = this;
-                
-                // 获取鼠标相对于元素的位置
-                if (e.type === 'mousedown') {
-                    offsetX = e.clientX - draggedElement.getBoundingClientRect().left;
-                    offsetY = e.clientY - draggedElement.getBoundingClientRect().top;
-                    
-                    document.addEventListener('mousemove', onDrag);
-                    document.addEventListener('mouseup', stopDrag);
-                } else if (e.type === 'touchstart') {
-                    const touch = e.touches[0];
-                    offsetX = touch.clientX - draggedElement.getBoundingClientRect().left;
-                    offsetY = touch.clientY - draggedElement.getBoundingClientRect().top;
-                    
-                    document.addEventListener('touchmove', onDrag, { passive: false });
-                    document.addEventListener('touchend', stopDrag);
-                }
-            }
-            
-            // 拖动中
-            function onDrag(e) {
-                if (!draggedElement) return;
-                e.preventDefault();
-                
-                let clientX, clientY;
-                if (e.type === 'mousemove') {
-                    clientX = e.clientX;
-                    clientY = e.clientY;
-                } else if (e.type === 'touchmove') {
-                    const touch = e.touches[0];
-                    clientX = touch.clientX;
-                    clientY = touch.clientY;
-                }
-                
-                const canvasRect = canvas.getBoundingClientRect();
-                let left = (clientX - canvasRect.left - offsetX) / currentZoom;
-                let top = (clientY - canvasRect.top - offsetY) / currentZoom;
-                
-                // 限制在画布内
-                const width = parseInt(draggedElement.style.width);
-                const height = parseInt(draggedElement.style.height);
-                left = Math.max(0, Math.min(canvas.clientWidth / currentZoom - width, left));
-                top = Math.max(0, Math.min(canvas.clientHeight / currentZoom - height, top));
-                
-                draggedElement.style.left = `${left}px`;
-                draggedElement.style.top = `${top}px`;
-            }
-            
-            // 停止拖动
-            function stopDrag() {
-                draggedElement = null;
-                document.removeEventListener('mousemove', onDrag);
-                document.removeEventListener('mouseup', stopDrag);
-                document.removeEventListener('touchmove', onDrag);
-                document.removeEventListener('touchend', stopDrag);
-            }
+            function startDrag(e) {
+  e.preventDefault();
+  draggedElement = this;
+
+  const isTable = draggedElement.classList.contains('table') ||
+                  draggedElement.classList.contains('rectangle-table') ||
+                  draggedElement.classList.contains('round-table');
+
+  // 获取初始位置
+  if (e.type === 'mousedown') {
+    offsetX = e.clientX - draggedElement.getBoundingClientRect().left;
+    offsetY = e.clientY - draggedElement.getBoundingClientRect().top;
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', stopDrag);
+  } else if (e.type === 'touchstart') {
+    const touch = e.touches[0];
+    offsetX = touch.clientX - draggedElement.getBoundingClientRect().left;
+    offsetY = touch.clientY - draggedElement.getBoundingClientRect().top;
+    document.addEventListener('touchmove', onDrag, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+  }
+
+  // 如果是桌子，找出绑定的椅子
+  if (isTable) {
+    const parentId = draggedElement.getAttribute('data-id');
+    draggedElement._linkedChairs = Array.from(document.querySelectorAll(`.chair[data-parent-id="${parentId}"]`));
+  } else {
+    draggedElement._linkedChairs = [];
+  }
+}
+
+function onDrag(e) {
+  if (!draggedElement) return;
+  e.preventDefault();
+
+  let clientX, clientY;
+  if (e.type === 'mousemove') {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  } else if (e.type === 'touchmove') {
+    const touch = e.touches[0];
+    clientX = touch.clientX;
+    clientY = touch.clientY;
+  }
+
+  const canvasRect = canvas.getBoundingClientRect();
+  const newLeft = (clientX - canvasRect.left - offsetX) / currentZoom;
+  const newTop = (clientY - canvasRect.top - offsetY) / currentZoom;
+
+  const deltaX = newLeft - parseFloat(draggedElement.style.left || 0);
+  const deltaY = newTop - parseFloat(draggedElement.style.top || 0);
+
+  // 移动主元素
+  draggedElement.style.left = `${newLeft}px`;
+  draggedElement.style.top = `${newTop}px`;
+
+  // 同步移动椅子
+  if (draggedElement._linkedChairs) {
+    draggedElement._linkedChairs.forEach(chair => {
+      const left = parseFloat(chair.style.left || 0);
+      const top = parseFloat(chair.style.top || 0);
+      chair.style.left = `${left + deltaX}px`;
+      chair.style.top = `${top + deltaY}px`;
+    });
+  }
+}
+
+function stopDrag() {
+  draggedElement = null;
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener('touchmove', onDrag);
+  document.removeEventListener('touchend', stopDrag);
+}
             
             // 放置参会人员到座位
             function dropPersonOnChair(personId, chairElement) {
