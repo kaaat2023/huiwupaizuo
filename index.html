@@ -574,7 +574,40 @@ item.appendChild(deleteBtn);
                 // 使元素可拖动
                 item.addEventListener('mousedown', startDrag);
                 item.addEventListener('touchstart', startDrag, { passive: false });
-                
+// 自动添加椅子逻辑
+if (type === 'rectangle-table') {
+  // 在长桌下边同侧添加两张椅子
+  const baseLeft = parseInt(item.style.left);
+  const baseTop = parseInt(item.style.top);
+  const tableWidth = parseInt(item.style.width);
+
+  const chairSpacing = tableWidth / 3;
+  for (let i = 0; i < 2; i++) {
+    const chair = createFurnitureItem('chair', 40, 40);
+    chair.style.left = `${baseLeft + (i + 1) * chairSpacing - 20}px`;
+    chair.style.top = `${baseTop + parseInt(item.style.height) + 10}px`;
+    canvas.appendChild(chair);
+  }
+}
+
+if (type === 'round-table') {
+  // 围绕圆桌放置 10 张椅子
+  const baseLeft = parseInt(item.style.left);
+  const baseTop = parseInt(item.style.top);
+  const centerX = baseLeft + parseInt(item.style.width) / 2;
+  const centerY = baseTop + parseInt(item.style.height) / 2;
+  const radius = parseInt(item.style.width) / 2 + 50;
+
+  for (let i = 0; i < 10; i++) {
+    const angle = (2 * Math.PI / 10) * i;
+    const x = centerX + radius * Math.cos(angle) - 20;
+    const y = centerY + radius * Math.sin(angle) - 20;
+    const chair = createFurnitureItem('chair', 40, 40);
+    chair.style.left = `${x}px`;
+    chair.style.top = `${y}px`;
+    canvas.appendChild(chair);
+  }
+}                
                 return item;
             }
             
