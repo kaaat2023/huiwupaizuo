@@ -600,23 +600,29 @@ canvas.appendChild(chair);
     }
   }
 
-  if (type === 'round-table') {
-    // 围绕圆桌环形分布添加 10 张椅子
-    const centerX = baseLeft + width / 2;
-    const centerY = baseTop + height / 2;
-    const radius = width / 2 + 50;
+ document.getElementById('add-round-table').addEventListener('click', function () {
+    const table = createFurnitureItem('round-table', 120, 120, true);
+    table.style.left = '200px';
+    table.style.top = '100px';
+    canvas.appendChild(table);
+
+    const tableId = table.dataset.id;
+    const centerX = 200 + 60;
+    const centerY = 100 + 60;
+    const radius = 90;
 
     for (let i = 0; i < 10; i++) {
-      const angle = (2 * Math.PI / 10) * i;
-      const x = centerX + radius * Math.cos(angle) - 20;
-      const y = centerY + radius * Math.sin(angle) - 20;
-      const chair = createFurnitureItem('chair', 40, 40);
-      chair.style.left = `${x}px`;
-      chair.style.top = `${y}px`;
-      canvas.appendChild(chair);
+        const angle = (i * 2 * Math.PI) / 10;
+        const chairX = centerX + radius * Math.cos(angle) - 20;
+        const chairY = centerY + radius * Math.sin(angle) - 20;
+
+        const chair = createFurnitureItem('chair', 40, 40);
+        chair.style.left = `${chairX}px`;
+        chair.style.top = `${chairY}px`;
+        chair.setAttribute('data-attachedTo', tableId);
+        canvas.appendChild(chair);
     }
-  }
-}, 0);           
+});      
                 return item;
             }
             
