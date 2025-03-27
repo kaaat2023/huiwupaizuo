@@ -1,185 +1,159 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>排座系统 Pro（蓝白主题）</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>智能会务排座 Pro（增强版）</title>
   <style>
-    body { font-family: "Microsoft YaHei", sans-serif; background: #f0f6fc; margin: 0; padding: 20px; }
-    h1 { text-align: center; color: #1565c0; }
-    #controls, #guestList { text-align: center; margin-bottom: 10px; }
-    button {
-      background: #1565c0; color: white; border: none; border-radius: 4px;
-      padding: 6px 12px; margin: 5px; cursor: pointer;
-    }
-    input[type="file"] { margin: 5px; }
+    body { font-family: sans-serif; background: #f2f8ff; margin: 10px; }
+    h1 { text-align: center; color: #1565c0; margin-bottom: 10px; }
+    .controls, .layout-options { text-align: center; margin: 10px; }
+    button, select { margin: 5px; padding: 6px 12px; border-radius: 4px; border: 1px solid #ccc; }
+
     #workspace {
-      width: 100%; height: 600px; border: 1px solid #ccc; background: white;
-      position: relative; overflow: auto; border-radius: 8px;
+      border: 2px dashed #90caf9;
+      border-radius: 10px;
+      min-height: 400px;
+      margin: 0 auto;
+      background: white;
+      position: relative;
+      overflow: auto;
     }
-    .table {
-      position: absolute; background: #e3f2fd; border: 2px solid #90caf9;
-      padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      touch-action: none;
+
+    .table, .chair {
+      position: absolute;
+      border: 2px solid #1976d2;
+      border-radius: 8px;
+      background: #e3f2fd;
+      padding: 10px;
+      cursor: move;
+      user-select: none;
     }
-    .seat {
-      width: 70px; height: 30px; border: 1px dashed #999; margin: 4px auto;
-      background: #f0f0f0; text-align: center; line-height: 30px; border-radius: 4px;
-    }
-    .seat.occupied {
-      background: #bbdefb; border: 1px solid #2196f3; font-weight: bold;
-    }
-    .guest {
-      display: inline-block; background: #bbdefb; padding: 6px 12px; border-radius: 16px;
-      margin: 4px; cursor: grab;
+
+    .table.round { border-radius: 50%; }
+    .selected { outline: 3px solid #ef5350; }
+
+    .toolbar {
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      padding: 4px;
+      display: flex;
+      gap: 4px;
+      z-index: 999;
     }
   </style>
 </head>
 <body>
   <h1>排座系统 Pro（蓝白主题，支持手机拖动）</h1>
-
-  <div id="controls">
-    <input type="file" id="excelInput" accept=".xlsx" />
-    <input type="file" id="logoInput" accept="image/*" />
-    <button onclick="addTable()">添加桌子</button>
-    <button onclick="autoArrange()">自动排座</button>
-    <button onclick="exportCards()">导出桌卡 PDF</button>
-    <button onclick="exportImage()">导出排座图</button>
+  <div class="layout-options">
+    <label>布局方式：</label>
+    <select id="layoutMode">
+      <option value="free">自由排布</option>
+      <option value="horizontal">横排</option>
+      <option value="vertical">竖排</option>
+      <option value="u-shape">U 型</option>
+    </select>
   </div>
-
+  <div class="controls">
+    <button onclick="addTable()">添加桌子</button>
+    <button onclick="addChair()">添加椅子</button>
+  </div>
   <div id="workspace"></div>
 
-  <div id="guestList">
-    <h3>嘉宾列表</h3>
-    <div id="guests"></div>
-  </div>
-
   <script>
-    let logoDataUrl = '';
-    let tableId = 0;
-
-    document.getElementById('logoInput').addEventListener('change', e => {
-      const reader = new FileReader();
-      reader.onload = () => logoDataUrl = reader.result;
-      reader.readAsDataURL(e.target.files[0]);
-    });
-
-    document.getElementById('excelInput').addEventListener('change', e => {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const guests = XLSX.utils.sheet_to_json(sheet);
-        const guestDiv = document.getElementById('guests');
-        guestDiv.innerHTML = '';
-        guests.forEach(g => {
-          const div = document.createElement('div');
-          div.className = 'guest';
-          div.textContent = g.姓名;
-          div.dataset.name = g.姓名;
-          div.dataset.unit = g.单位 || '';
-          div.dataset.title = g.职务 || '';
-          div.draggable = true;
-          div.addEventListener('dragstart', e => {
-            e.dataTransfer.setData('text/plain', JSON.stringify(div.dataset));
-          });
-          guestDiv.appendChild(div);
-        });
-      };
-      reader.readAsArrayBuffer(file);
-    });
+    let workspace = document.getElementById("workspace");
+    let selectedEl = null;
 
     function addTable() {
-      const table = document.createElement('div');
-      table.className = 'table';
-      table.style.left = '50px';
-      table.style.top = '50px';
-      table.dataset.id = tableId++;
+      const div = document.createElement("div");
+      div.className = "table";
+      div.style.left = "50px";
+      div.style.top = "50px";
+      div.innerText = "桌子";
+      div.onclick = e => selectElement(div, e);
+      makeDraggable(div);
+      workspace.appendChild(div);
+    }
 
-      for (let i = 0; i < 6; i++) {
-        const seat = document.createElement('div');
-        seat.className = 'seat';
-        seat.addEventListener('dragover', e => e.preventDefault());
-        seat.addEventListener('drop', e => {
-          const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-          seat.textContent = data.name;
-          seat.classList.add('occupied');
-          seat.dataset.name = data.name;
-          seat.dataset.unit = data.unit;
-          seat.dataset.title = data.title;
-        });
-        table.appendChild(seat);
-      }
+    function addChair() {
+      const div = document.createElement("div");
+      div.className = "chair";
+      div.style.left = "150px";
+      div.style.top = "50px";
+      div.innerText = "椅子";
+      div.onclick = e => selectElement(div, e);
+      makeDraggable(div);
+      workspace.appendChild(div);
+    }
 
-      makeDraggable(table);
-      document.getElementById('workspace').appendChild(table);
+    function selectElement(el, e) {
+      e.stopPropagation();
+      if (selectedEl) selectedEl.classList.remove("selected");
+      selectedEl = el;
+      selectedEl.classList.add("selected");
+      showToolbar(el);
+    }
+
+    workspace.onclick = () => {
+      if (selectedEl) selectedEl.classList.remove("selected");
+      selectedEl = null;
+      removeToolbar();
     }
 
     function makeDraggable(el) {
-      let offsetX = 0, offsetY = 0, dragging = false;
-
-      el.addEventListener('touchstart', function(e) {
-        dragging = true;
-        const rect = el.getBoundingClientRect();
-        offsetX = e.touches[0].clientX - rect.left;
-        offsetY = e.touches[0].clientY - rect.top;
-      });
-
-      el.addEventListener('touchmove', function(e) {
-        if (!dragging) return;
-        e.preventDefault();
-        const x = e.touches[0].clientX - offsetX;
-        const y = e.touches[0].clientY - offsetY;
-        el.style.left = x + "px";
-        el.style.top = y + "px";
-      });
-
-      el.addEventListener('touchend', function() {
-        dragging = false;
-      });
-    }
-
-    function autoArrange() {
-      const guests = document.querySelectorAll('.guest');
-      const seats = document.querySelectorAll('.seat:not(.occupied)');
-      guests.forEach((g, i) => {
-        if (seats[i]) {
-          seats[i].textContent = g.dataset.name;
-          seats[i].classList.add('occupied');
-          seats[i].dataset.name = g.dataset.name;
-          seats[i].dataset.unit = g.dataset.unit;
-          seats[i].dataset.title = g.dataset.title;
+      let offsetX, offsetY;
+      el.ontouchstart = e => {
+        const touch = e.touches[0];
+        offsetX = touch.clientX - el.offsetLeft;
+        offsetY = touch.clientY - el.offsetTop;
+        el.ontouchmove = e => {
+          const touch = e.touches[0];
+          el.style.left = (touch.clientX - offsetX) + 'px';
+          el.style.top = (touch.clientY - offsetY) + 'px';
         }
-      });
+        el.ontouchend = () => { el.ontouchmove = null; }
+      }
     }
 
-    async function exportCards() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const seats = document.querySelectorAll('.seat.occupied');
-      seats.forEach((seat, i) => {
-        if (i > 0) doc.addPage();
-        if (logoDataUrl) doc.addImage(logoDataUrl, "PNG", 10, 10, 40, 20);
-        doc.setFontSize(18);
-        doc.text(`姓名：${seat.dataset.name || ''}`, 20, 50);
-        doc.text(`单位：${seat.dataset.unit || ''}`, 20, 65);
-        doc.text(`职务：${seat.dataset.title || ''}`, 20, 80);
-      });
-      doc.save("桌卡合集.pdf");
+    function showToolbar(el) {
+      removeToolbar();
+      const toolbar = document.createElement("div");
+      toolbar.className = "toolbar";
+      toolbar.style.left = (el.offsetLeft + el.offsetWidth + 5) + "px";
+      toolbar.style.top = el.offsetTop + "px";
+
+      toolbar.innerHTML = `
+        <button onclick="rotateSelected()">↻</button>
+        <button onclick="removeSelected()">🗑️</button>
+        <button onclick="toggleShape()">圆/方</button>
+      `;
+      workspace.appendChild(toolbar);
     }
 
-    function exportImage() {
-      html2canvas(document.getElementById('workspace')).then(canvas => {
-        const link = document.createElement('a');
-        link.download = '排座图.png';
-        link.href = canvas.toDataURL();
-        link.click();
-      });
+    function removeToolbar() {
+      const tb = document.querySelector(".toolbar");
+      if (tb) tb.remove();
+    }
+
+    function rotateSelected() {
+      let angle = parseInt(selectedEl.getAttribute("data-angle") || "0") + 45;
+      selectedEl.style.transform = `rotate(${angle}deg)`;
+      selectedEl.setAttribute("data-angle", angle);
+    }
+
+    function removeSelected() {
+      if (selectedEl) {
+        selectedEl.remove();
+        removeToolbar();
+        selectedEl = null;
+      }
+    }
+
+    function toggleShape() {
+      if (selectedEl && selectedEl.classList.contains("table")) {
+        selectedEl.classList.toggle("round");
+      }
     }
   </script>
 </body>
