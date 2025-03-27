@@ -547,7 +547,30 @@
                     item.innerHTML = type === 'round-table' ? '圆桌' : '桌子';
                     item.style.zIndex = '1';
                 }
-                
+                // 添加删除按钮
+const deleteBtn = document.createElement('span');
+deleteBtn.innerHTML = '×';
+deleteBtn.style.position = 'absolute';
+deleteBtn.style.top = '-10px';
+deleteBtn.style.right = '-10px';
+deleteBtn.style.width = '20px';
+deleteBtn.style.height = '20px';
+deleteBtn.style.lineHeight = '20px';
+deleteBtn.style.background = '#ff4d4f';
+deleteBtn.style.color = '#fff';
+deleteBtn.style.borderRadius = '50%';
+deleteBtn.style.textAlign = 'center';
+deleteBtn.style.cursor = 'pointer';
+deleteBtn.style.fontSize = '14px';
+deleteBtn.title = '删除';
+
+deleteBtn.addEventListener('click', function(e) {
+  e.stopPropagation(); // 防止触发拖拽
+  item.remove();
+});
+
+// 添加到家具元素上
+item.appendChild(deleteBtn);
                 // 使元素可拖动
                 item.addEventListener('mousedown', startDrag);
                 item.addEventListener('touchstart', startDrag, { passive: false });
