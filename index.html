@@ -593,10 +593,10 @@ setTimeout(() => {
     const chairSpacing = width / 3;
     for (let i = 0; i < 2; i++) {
       const chair = createFurnitureItem('chair', 40, 40);
-      chair.setAttribute('data-parent-id', item.getAttribute('data-id'));
-      chair.style.left = `${baseLeft + (i + 1) * chairSpacing - 20}px`;
-      chair.style.top = `${baseTop + height + 10}px`;
-      canvas.appendChild(chair);
+chair.style.left = xxx;
+chair.style.top = xxx;
+chair.setAttribute('data-attachedTo', table.dataset.id); // ✅ 设置归属桌子
+canvas.appendChild(chair);
     }
   }
 
@@ -794,18 +794,48 @@ function stopDrag() {
             });
             
             document.getElementById('add-rectangle-table').addEventListener('click', function() {
-                const table = createFurnitureItem('rectangle-table', 200, 80);
-                table.style.left = '50px';
-                table.style.top = '50px';
-                canvas.appendChild(table);
-            });
+    const table = createFurnitureItem('rectangle-table', 200, 80);
+    table.style.left = '50px';
+    table.style.top = '50px';
+    canvas.appendChild(table);
+
+    const tableId = table.dataset.id;
+
+    // 自动添加两张椅子，放在桌子下方
+    for (let i = 0; i < 2; i++) {
+        const chair = createFurnitureItem('chair', 40, 40);
+        chair.style.left = `${70 + i * 60}px`;
+        chair.style.top = `140px`;
+        chair.setAttribute('data-attachedTo', tableId); // ✅ 关键：设置归属
+        canvas.appendChild(chair);
+    }
+});
             
             document.getElementById('add-round-table').addEventListener('click', function() {
-                const table = createFurnitureItem('round-table', 120, 120, true);
-                table.style.left = '50px';
-                table.style.top = '50px';
-                canvas.appendChild(table);
-            });
+    const table = createFurnitureItem('round-table', 120, 120, true);
+    table.style.left = '200px';
+    table.style.top = '100px';
+    canvas.appendChild(table);
+
+    const tableId = table.dataset.id;
+    const tableX = 200 + 60; // 圆心X（table left + radius）
+    const tableY = 100 + 60; // 圆心Y
+
+    const radius = 90;
+    const chairSize = 40;
+
+    for (let i = 0; i < 10; i++) {
+        const angle = (i / 10) * 2 * Math.PI;
+        const chair = createFurnitureItem('chair', chairSize, chairSize);
+        const chairX = tableX + radius * Math.cos(angle) - chairSize / 2;
+        const chairY = tableY + radius * Math.sin(angle) - chairSize / 2;
+
+        chair.style.left = `${chairX}px`;
+        chair.style.top = `${chairY}px`;
+        chair.setAttribute('data-attachedTo', tableId); // ✅ 关键：设置归属
+        canvas.appendChild(chair);
+    }
+});
             
             // 添加参会人员
             document.getElementById('add-participant').addEventListener('click', function() {
