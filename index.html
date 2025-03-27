@@ -809,29 +809,6 @@ function stopDrag() {
         canvas.appendChild(chair);
     }
 });
-            
-            document.getElementById('add-round-table').addEventListener('click', function () {
-    const table = createFurnitureItem('round-table', 120, 120, true);
-    table.style.left = '200px';
-    table.style.top = '100px';
-    canvas.appendChild(table);
-
-    const tableId = table.dataset.id;
-    const centerX = 200 + 60;
-    const centerY = 100 + 60;
-    const radius = 90;
-    const chairSize = 40;
-
-    for (let i = 0; i < 10; i++) {
-        const angle = (i / 10) * 2 * Math.PI;
-        const chair = createFurnitureItem('chair', chairSize, chairSize);
-        chair.style.left = `${centerX + radius * Math.cos(angle) - chairSize / 2}px`;
-        chair.style.top = `${centerY + radius * Math.sin(angle) - chairSize / 2}px`;
-        chair.setAttribute('data-attachedTo', tableId);
-        canvas.appendChild(chair);
-    }
-});
-            
             // 添加参会人员
             document.getElementById('add-participant').addEventListener('click', function() {
                 const input = document.getElementById('new-participant');
